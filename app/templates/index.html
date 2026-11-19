@@ -1,0 +1,640 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TR-LPR Analiz</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg0: #0c1118;
+      --bg1: #141b24;
+      --bg2: #1a2330;
+      --card: #182231;
+      --card-hover: #1e2a3b;
+      --line: rgba(148, 163, 184, 0.16);
+      --text: #e8eef6;
+      --muted: #93a4b8;
+      --accent: #2dd4bf;
+      --accent-dim: rgba(45, 212, 191, 0.14);
+      --ok: #34d399;
+      --ok-bg: rgba(52, 211, 153, 0.12);
+      --err: #fb7185;
+      --err-bg: rgba(251, 113, 133, 0.12);
+      --warn: #fbbf24;
+      --warn-bg: rgba(251, 191, 36, 0.12);
+      --shadow: 0 18px 50px rgba(0, 0, 0, 0.35);
+      --radius: 18px;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      color: var(--text);
+      font-family: "IBM Plex Sans", sans-serif;
+      background:
+        radial-gradient(1200px 600px at 10% -10%, rgba(45, 212, 191, 0.12), transparent 55%),
+        radial-gradient(900px 500px at 90% 0%, rgba(56, 189, 248, 0.08), transparent 50%),
+        linear-gradient(180deg, var(--bg0), #0a0e14 70%);
+    }
+    h1, h2, h3, .brand, .plate-text, .stat-value {
+      font-family: Sora, sans-serif;
+    }
+    header {
+      position: sticky;
+      top: 0;
+      z-index: 20;
+      backdrop-filter: blur(14px);
+      background: rgba(12, 17, 24, 0.82);
+      border-bottom: 1px solid var(--line);
+      padding: 1rem 1.5rem;
+      display: flex;
+      justify-content: space-between;
+      gap: 1rem;
+      align-items: center;
+    }
+    .brand {
+      margin: 0;
+      font-size: 1.15rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+    }
+    .brand span { color: var(--accent); }
+    .subtitle { margin: 0.2rem 0 0; color: var(--muted); font-size: 0.88rem; }
+    main { max-width: 1280px; margin: 0 auto; padding: 1.5rem; }
+    .panel {
+      background: linear-gradient(180deg, rgba(30, 42, 59, 0.9), rgba(24, 34, 49, 0.95));
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      box-shadow: var(--shadow);
+      margin-bottom: 1.25rem;
+    }
+    .upload-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap: 1rem;
+      align-items: end;
+    }
+    @media (max-width: 860px) {
+      .upload-grid { grid-template-columns: 1fr; }
+    }
+    .field label {
+      display: block;
+      font-size: 0.78rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: var(--muted);
+      margin-bottom: 0.45rem;
+      font-weight: 600;
+    }
+    .file-box {
+      border: 1px dashed rgba(148, 163, 184, 0.35);
+      border-radius: 14px;
+      padding: 0.85rem 1rem;
+      background: rgba(10, 14, 20, 0.45);
+      min-height: 64px;
+      display: flex;
+      align-items: center;
+    }
+    input[type="file"] {
+      width: 100%;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+    .btn {
+      appearance: none;
+      border: 0;
+      border-radius: 12px;
+      padding: 0.85rem 1.25rem;
+      font-weight: 600;
+      font-size: 0.95rem;
+      cursor: pointer;
+      font-family: Sora, sans-serif;
+      transition: transform 0.15s ease, opacity 0.15s ease, background 0.15s ease;
+    }
+    .btn:hover { transform: translateY(-1px); }
+    .btn:disabled { opacity: 0.55; cursor: wait; transform: none; }
+    .btn-primary {
+      background: linear-gradient(135deg, #2dd4bf, #22a6a0);
+      color: #06201c;
+      min-width: 160px;
+    }
+    .btn-ghost {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--line);
+      padding: 0.35rem 0.7rem;
+      font-size: 0.78rem;
+      border-radius: 999px;
+    }
+    .btn-ghost:hover { background: rgba(255,255,255,0.04); }
+    .hint { margin: 0.85rem 0 0; color: var(--muted); font-size: 0.86rem; }
+    .progress {
+      margin-top: 0.9rem;
+      color: var(--muted);
+      font-size: 0.9rem;
+    }
+    .progress strong { color: var(--text); }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.85rem;
+      margin-bottom: 1rem;
+    }
+    @media (max-width: 900px) {
+      .stats { grid-template-columns: 1fr 1fr; }
+    }
+    .stat {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      padding: 1rem 1.1rem;
+    }
+    .stat-label {
+      color: var(--muted);
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      font-weight: 600;
+    }
+    .stat-value {
+      margin-top: 0.35rem;
+      font-size: 1.55rem;
+      font-weight: 700;
+    }
+    .stat-value.ok { color: var(--ok); }
+    .stat-value.err { color: var(--err); }
+    .filters {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 1rem;
+    }
+    .chip {
+      border: 1px solid var(--line);
+      background: rgba(255,255,255,0.03);
+      color: var(--muted);
+      border-radius: 999px;
+      padding: 0.45rem 0.9rem;
+      font-size: 0.84rem;
+      cursor: pointer;
+      font-family: Sora, sans-serif;
+      font-weight: 500;
+    }
+    .chip.active {
+      color: var(--accent);
+      border-color: rgba(45, 212, 191, 0.45);
+      background: var(--accent-dim);
+    }
+    .result {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: var(--radius);
+      padding: 1.1rem;
+      margin-bottom: 1rem;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.18);
+      transition: border-color 0.15s ease, background 0.15s ease;
+    }
+    .result:hover { background: var(--card-hover); }
+    .result.found { border-color: rgba(52, 211, 153, 0.28); }
+    .result.missing { border-color: rgba(251, 113, 133, 0.22); }
+    .result-head {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.65rem;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 0.95rem;
+    }
+    .head-left {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.55rem;
+      align-items: center;
+      min-width: 0;
+    }
+    .filename {
+      font-weight: 600;
+      word-break: break-all;
+      font-size: 0.92rem;
+    }
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.35rem;
+      padding: 0.28rem 0.7rem;
+      border-radius: 999px;
+      font-size: 0.78rem;
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      font-family: Sora, sans-serif;
+    }
+    .badge.found { color: var(--ok); background: var(--ok-bg); }
+    .badge.missing { color: var(--err); background: var(--err-bg); }
+    .badge.sys {
+      color: var(--muted);
+      background: rgba(148, 163, 184, 0.1);
+      font-weight: 600;
+    }
+    .time-pill {
+      color: var(--muted);
+      font-size: 0.84rem;
+      background: rgba(10, 14, 20, 0.45);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      padding: 0.3rem 0.7rem;
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: 1.35fr 1fr 0.95fr;
+      gap: 0.85rem;
+    }
+    @media (max-width: 980px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+    .cell {
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      background: rgba(10, 14, 20, 0.35);
+      padding: 0.7rem;
+      min-height: 160px;
+    }
+    .cell h3 {
+      margin: 0 0 0.55rem;
+      font-size: 0.72rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: 0.07em;
+      font-weight: 600;
+    }
+    .cell img {
+      display: block;
+      width: 100%;
+      max-height: 260px;
+      object-fit: contain;
+      background: #070b10;
+      border-radius: 10px;
+    }
+    .plate-box {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      gap: 0.65rem;
+      min-height: 140px;
+    }
+    .plate-text {
+      font-size: 1.65rem;
+      font-weight: 700;
+      letter-spacing: 0.05em;
+      word-break: break-all;
+    }
+    .plate-text.missing { color: var(--err); font-size: 1.05rem; }
+    .meta-line { font-size: 0.84rem; color: var(--muted); }
+    .meta-line b { color: var(--text); font-weight: 600; }
+    .reason {
+      margin: 0.9rem 0 0;
+      padding: 0.75rem 0.9rem;
+      border-radius: 12px;
+      background: rgba(10, 14, 20, 0.4);
+      border: 1px solid var(--line);
+      color: var(--muted);
+      font-size: 0.88rem;
+    }
+    .reason strong { color: var(--text); }
+    .empty {
+      color: var(--muted);
+      text-align: center;
+      padding: 2.5rem 1rem;
+      border: 1px dashed rgba(148, 163, 184, 0.25);
+      border-radius: var(--radius);
+      background: rgba(24, 34, 49, 0.45);
+    }
+    .hidden { display: none !important; }
+  </style>
+</head>
+<body>
+  <header>
+    <div>
+      <h1 class="brand">TR-<span>LPR</span> Analiz</h1>
+      <p class="subtitle">Plaka tespiti · kırpma · OCR · manuel doğrulama</p>
+    </div>
+  </header>
+
+  <main>
+    <section class="panel">
+      <form id="upload-form">
+        <div class="upload-grid">
+          <div class="field">
+            <label for="files">Tek / çoklu dosya</label>
+            <div class="file-box">
+              <input id="files" type="file" accept="image/*" multiple />
+            </div>
+          </div>
+          <div class="field">
+            <label for="folder">Klasör (Chrome / Edge)</label>
+            <div class="file-box">
+              <input id="folder" type="file" accept="image/*" webkitdirectory />
+            </div>
+          </div>
+          <button type="submit" class="btn btn-primary" id="submit-btn">Analizi Başlat</button>
+        </div>
+        <p class="hint">Dosya ve klasör birlikte seçilebilir. Görüntüler sırayla işlenir; sonuçlar diske kaydedilmez.</p>
+        <div class="progress" id="progress" hidden></div>
+      </form>
+    </section>
+
+    <section class="stats" id="stats" hidden>
+      <div class="stat">
+        <div class="stat-label">Toplam</div>
+        <div class="stat-value" id="stat-total">0</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Bulundu</div>
+        <div class="stat-value ok" id="stat-found">0</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Bulunmadı</div>
+        <div class="stat-value err" id="stat-missing">0</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">Başarı oranı</div>
+        <div class="stat-value" id="stat-rate">—</div>
+      </div>
+    </section>
+
+    <section class="filters" id="filters" hidden>
+      <button type="button" class="chip active" data-filter="all">Tümü</button>
+      <button type="button" class="chip" data-filter="found">Bulunanlar</button>
+      <button type="button" class="chip" data-filter="missing">Bulunmayanlar</button>
+      <button type="button" class="chip" data-filter="ocr_failed">OCR okunamayanlar</button>
+      <button type="button" class="chip" data-filter="plate_not_detected">Plaka tespit edilemeyenler</button>
+      <button type="button" class="chip" data-filter="invalid_plate">Geçersiz plaka</button>
+    </section>
+
+    <section id="results">
+      <p class="empty">Analiz için dosya veya klasör seçin.</p>
+    </section>
+  </main>
+
+  <script>
+    const form = document.getElementById("upload-form");
+    const filesInput = document.getElementById("files");
+    const folderInput = document.getElementById("folder");
+    const resultsEl = document.getElementById("results");
+    const submitBtn = document.getElementById("submit-btn");
+    const progress = document.getElementById("progress");
+    const statsEl = document.getElementById("stats");
+    const filtersEl = document.getElementById("filters");
+
+    /** @type {Array<any>} */
+    let items = [];
+    let currentFilter = "all";
+
+    function isImageFile(file) {
+      return file.type.startsWith("image/") || /\.(jpe?g|png|bmp|webp)$/i.test(file.name);
+    }
+
+    function collectImages() {
+      const map = new Map();
+      const add = (file) => {
+        if (!isImageFile(file)) return;
+        const key = (file.webkitRelativePath || file.name) + "::" + file.size + "::" + file.lastModified;
+        map.set(key, file);
+      };
+      for (const f of filesInput.files || []) add(f);
+      for (const f of folderInput.files || []) add(f);
+      return Array.from(map.values()).sort((a, b) => {
+        const pa = a.webkitRelativePath || a.name;
+        const pb = b.webkitRelativePath || b.name;
+        return pa.localeCompare(pb, "tr");
+      });
+    }
+
+    function systemFound(item) {
+      return !!(item.data && item.data.is_valid && item.data.plate_text);
+    }
+
+    function displayFound(item) {
+      if (typeof item.manualFound === "boolean") return item.manualFound;
+      return systemFound(item);
+    }
+
+    function reasonText(item) {
+      const d = item.data || {};
+      if (displayFound(item)) {
+        if (typeof item.manualFound === "boolean" && item.manualFound && !systemFound(item)) {
+          return "Manuel olarak bulundu işaretlendi.";
+        }
+        return d.message || "Plaka başarıyla okundu ve doğrulandı.";
+      }
+      if (typeof item.manualFound === "boolean" && item.manualFound === false && systemFound(item)) {
+        return "Manuel olarak bulunmadı işaretlendi.";
+      }
+      const status = d.status || "error";
+      const map = {
+        plate_not_detected: "Plaka bölgesi tespit edilemedi.",
+        ocr_failed: "OCR, kırpılmış alanda metin okuyamadı.",
+        invalid_plate: "OCR çıktı verdi ancak Türkiye plaka formatına uymadı.",
+        uncertain: "Sonuç belirsiz; doğrulama kabul etmedi.",
+      };
+      const base = map[status] || "Plaka bulunamadı.";
+      const detail = d.message || item.error;
+      return detail && detail !== base ? `${base} ${detail}` : base;
+    }
+
+    function secondsLabel(ms) {
+      if (ms == null || Number.isNaN(Number(ms))) return "—";
+      return (Number(ms) / 1000).toFixed(2) + " sn";
+    }
+
+    function matchesFilter(item) {
+      const status = (item.data && item.data.status) || "error";
+      if (currentFilter === "all") return true;
+      if (currentFilter === "found") return displayFound(item);
+      if (currentFilter === "missing") return !displayFound(item);
+      if (currentFilter === "ocr_failed") return status === "ocr_failed";
+      if (currentFilter === "plate_not_detected") return status === "plate_not_detected";
+      if (currentFilter === "invalid_plate") return status === "invalid_plate" || status === "uncertain";
+      return true;
+    }
+
+    function updateStats() {
+      const total = items.length;
+      const found = items.filter(displayFound).length;
+      const missing = total - found;
+      const rate = total ? ((found / total) * 100).toFixed(1) + "%" : "—";
+      statsEl.hidden = total === 0;
+      filtersEl.hidden = total === 0;
+      document.getElementById("stat-total").textContent = String(total);
+      document.getElementById("stat-found").textContent = String(found);
+      document.getElementById("stat-missing").textContent = String(missing);
+      document.getElementById("stat-rate").textContent = rate;
+    }
+
+    function renderAll() {
+      updateStats();
+      const visible = items.filter(matchesFilter);
+      if (!items.length) {
+        resultsEl.innerHTML = `<p class="empty">Analiz için dosya veya klasör seçin.</p>`;
+        return;
+      }
+      if (!visible.length) {
+        resultsEl.innerHTML = `<p class="empty">Bu filtreye uyan sonuç yok.</p>`;
+        return;
+      }
+      resultsEl.innerHTML = visible.map((item) => renderCard(item)).join("");
+    }
+
+    function renderCard(item) {
+      const d = item.data || {};
+      const imgs = item.images || {};
+      const plate = d.plate_text || null;
+      const found = displayFound(item);
+      const label = item.relpath || item.filename || "";
+      const sys = (d.status || "error").replaceAll("_", " ");
+
+      return `
+        <article class="result ${found ? "found" : "missing"}" data-id="${item.id}">
+          <div class="result-head">
+            <div class="head-left">
+              <span class="badge ${found ? "found" : "missing"}">${found ? "Bulundu" : "Bulunmadı"}</span>
+              <button type="button" class="btn btn-ghost toggle-btn" data-id="${item.id}">
+                Değiştir → ${found ? "Bulunmadı" : "Bulundu"}
+              </button>
+              <span class="badge sys">${sys}</span>
+              <span class="filename">#${item.index + 1} — ${label}</span>
+            </div>
+            <span class="time-pill">${secondsLabel(d.processing_time_ms)}</span>
+          </div>
+          <div class="grid">
+            <div class="cell">
+              <h3>Orijinal / tespit</h3>
+              ${imgs.annotated || imgs.original
+                ? `<img src="${imgs.annotated || imgs.original}" alt="orijinal" />`
+                : `<p class="empty" style="border:0;padding:1rem;background:transparent">Görüntü yok</p>`}
+            </div>
+            <div class="cell">
+              <h3>Kırpılmış plaka</h3>
+              ${imgs.cropped
+                ? `<img src="${imgs.cropped}" alt="kırpılmış plaka" />`
+                : `<p class="empty" style="border:0;padding:1rem;background:transparent">Kırpılmış plaka yok</p>`}
+            </div>
+            <div class="cell">
+              <h3>OCR plaka metni</h3>
+              <div class="plate-box">
+                <div class="plate-text ${plate ? "" : "missing"}">${plate || "—"}</div>
+                <div class="meta-line">Ham OCR: <b>${d.raw_ocr || "—"}</b></div>
+                <div class="meta-line">Tespit: <b>${secondsLabel(d.timing?.detect_ms)}</b> · OCR: <b>${secondsLabel(d.timing?.ocr_ms)}</b></div>
+              </div>
+            </div>
+          </div>
+          <p class="reason"><strong>Sebep / not:</strong> ${reasonText(item)}</p>
+        </article>
+      `;
+    }
+
+    filtersEl.addEventListener("click", (e) => {
+      const btn = e.target.closest(".chip");
+      if (!btn) return;
+      currentFilter = btn.dataset.filter;
+      filtersEl.querySelectorAll(".chip").forEach((c) => c.classList.toggle("active", c === btn));
+      renderAll();
+    });
+
+    resultsEl.addEventListener("click", (e) => {
+      const btn = e.target.closest(".toggle-btn");
+      if (!btn) return;
+      const id = btn.dataset.id;
+      const item = items.find((x) => x.id === id);
+      if (!item) return;
+      item.manualFound = !displayFound(item);
+      renderAll();
+    });
+
+    form.addEventListener("submit", async (e) => {
+      e.preventDefault();
+      const list = collectImages();
+      if (!list.length) {
+        resultsEl.innerHTML = `<p class="empty">Görüntü seçilmedi. Dosya veya klasör ekleyin.</p>`;
+        statsEl.hidden = true;
+        filtersEl.hidden = true;
+        return;
+      }
+
+      items = [];
+      currentFilter = "all";
+      filtersEl.querySelectorAll(".chip").forEach((c) => {
+        c.classList.toggle("active", c.dataset.filter === "all");
+      });
+      submitBtn.disabled = true;
+      progress.hidden = false;
+      resultsEl.innerHTML = "";
+      updateStats();
+
+      for (let i = 0; i < list.length; i++) {
+        const file = list[i];
+        const rel = file.webkitRelativePath || file.name;
+        progress.innerHTML = `İşleniyor: <strong>${i + 1}/${list.length}</strong> — ${rel}`;
+
+        const fd = new FormData();
+        fd.append("files", file, file.name);
+
+        let item;
+        try {
+          const res = await fetch("/web/recognize", { method: "POST", body: fd });
+          const payload = await res.json();
+          if (!res.ok) {
+            const detail = payload.detail || "İstek başarısız";
+            throw new Error(typeof detail === "string" ? detail : JSON.stringify(detail));
+          }
+          const raw = (payload.results && payload.results[0]) || {
+            filename: file.name,
+            data: { status: "ocr_failed", plate_text: null, is_valid: false, message: "Boş yanıt" },
+            images: {},
+          };
+          item = {
+            id: "item-" + i,
+            index: i,
+            filename: raw.filename || file.name,
+            relpath: rel,
+            data: raw.data || {},
+            images: raw.images || {},
+            error: raw.error,
+            manualFound: null,
+          };
+        } catch (err) {
+          item = {
+            id: "item-" + i,
+            index: i,
+            filename: file.name,
+            relpath: rel,
+            data: {
+              status: "ocr_failed",
+              plate_text: null,
+              is_valid: false,
+              processing_time_ms: 0,
+              raw_ocr: null,
+              message: err.message,
+            },
+            images: {},
+            error: err.message,
+            manualFound: null,
+          };
+        }
+
+        items.push(item);
+        renderAll();
+        const el = resultsEl.querySelector(`[data-id="${item.id}"]`);
+        if (el && matchesFilter(item)) el.scrollIntoView({ behavior: "smooth", block: "nearest" });
+      }
+
+      const found = items.filter(displayFound).length;
+      progress.innerHTML = `<strong>Tamamlandı.</strong> ${found} bulundu / ${items.length - found} bulunmadı (toplam ${items.length}).`;
+      submitBtn.disabled = false;
+    });
+  </script>
+</body>
+</html>
